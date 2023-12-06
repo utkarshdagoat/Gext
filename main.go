@@ -3,7 +3,6 @@ package main
 import (
 	"fmt"
 	"os"
-	"unsafe"
 
 	"github.com/veandco/go-sdl2/sdl"
 	"github.com/veandco/go-sdl2/ttf"
@@ -72,35 +71,42 @@ func run() int {
 	var textInput string
 
 	for running {
-		for event := sdl.PollEvent(); event != nil; event = sdl.PollEvent() {
+		// I will leave this here
+		// Event is a fucking generic empty interface spent ages trying to figure it out
+		// ceretified retard moment didn't know how interfaces work
 
-			println(event.GetType())
-			switch event.GetType() {
-			case sdl.QUIT:
+		for event := sdl.PollEvent(); event != nil; event = sdl.PollEvent() {
+			switch event.(type) {
+			case *sdl.QuitEvent:
 				running = false
-			case sdl.TEXTINPUT:
-				e := (*sdl.TextEditingEvent)(unsafe.Pointer(&event))
+			case *sdl.TextInputEvent:
+				e := event.(*sdl.TextInputEvent)
 				textInput += e.GetText()
+				fmt.Println(textInput)
 				if texture != nil {
+					println("Here")
 					texture.Destroy()
 				}
 				surface, err = font_ttf.RenderUTF8Solid(textInput, white)
 				if err != nil {
-					fmt.Fprintf(os.Stderr, "TEXTURE: SDL Error: %s \n", err)
+					fmt.Fprintf(os.Stderr, "SURFACE WHILE EDITING: SDL Error: %s \n", err)
 					os.Exit(2)
 				}
-				texture, err = (renderer).CreateTextureFromSurface(surface)
+				texture, err = renderer.CreateTextureFromSurface(surface)
 				if err != nil {
-					fmt.Fprintf(os.Stderr, "TEXTURE: SDL Error: %s \n", err)
+					fmt.Fprintf(os.Stderr, "TEXTURE WHILE EDITING: SDL Error: %s \n", err)
 					os.Exit(2)
 				}
+
+				rect.W = surface.W
+				rect.H = surface.H
 
 			}
 		}
 
 		renderer.Clear()
-		renderer.Present()
 		renderer.Copy(texture, nil, &rect)
+		renderer.Present()
 		sdl.Delay(16)
 
 	}
